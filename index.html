@@ -6,20 +6,20 @@
   <meta name="color-scheme" content="dark">
   <title>The Museum</title>
   <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/map.css">
-  <link rel="stylesheet" href="css/experience.css">
+  <link rel="stylesheet" href="css/gallery.css">
 </head>
 <body>
-  <main id="museum" aria-label="An emotional atlas of art">
-    <div id="stage">
-      <canvas id="haze"></canvas>
-      <canvas id="field"></canvas>
-      <canvas id="motes"></canvas>
-      <div id="whispers"></div>
+  <main id="museum" aria-label="An emotional atlas of art — a moving gallery">
+    <canvas id="gl"></canvas>
+    <div id="whisper" class="whisper"></div>
+    <div id="reveal" class="reveal">
+      <div id="reveal-text" class="reveal-text"></div>
+      <div id="reveal-attr" class="reveal-attr"></div>
     </div>
-    <div id="vignette"></div>
-    <div id="glow"></div>
-    <div id="veil"></div>
+    <canvas id="whole" class="whole"></canvas>
+    <div id="frame" class="frame"></div>
+    <div id="label" class="exp-label"></div>
+    <div id="veil" class="dark"></div>
   </main>
   <noscript><p class="noscript">The museum needs JavaScript to open its doors.</p></noscript>
   <script type="module" src="js/main.js"></script>

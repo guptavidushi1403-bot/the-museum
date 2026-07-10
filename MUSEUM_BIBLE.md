@@ -80,3 +80,34 @@ All Van Gogh letter fragments above are genuine but must be checked for exact wo
 
 ## Scope for v1
 Five paintings, each fully realized rather than many done shallowly. Each painting's world, sound, and discovery mechanism should be unique — only the five-beat emotional arc, the Return ritual, the movement feel, and the authenticity rules above are constant across all five.
+
+## v2 Amendments — owner-directed (July 2026)
+
+The project owner redirected the museum's surface while keeping its heart. These
+amendments supersede the corresponding principles above:
+
+1. **Home is a moving gallery of the real paintings.** The first screen is a
+   drifting 3D hall where the five artworks hang framed; each painting is the
+   window into its world. The abstract emotion map is retired; emotion now
+   lives inside each world.
+2. **Painterly 3D.** Worlds are true 3D spaces the visitor moves through — but
+   built from strokes and light floating in space, the painting's own language
+   given depth. The original prohibition still holds at its core: never
+   photorealistic modeled geometry, materials, or game-like environments.
+3. **Clicking is allowed** as deliberate passage: click a painting to enter it,
+   click a glowing presence to glide toward it. Discovery reveals themselves
+   remain arrival-based — coming near is what notices.
+4. **The screen is never still.** The camera drifts continuously, in the hall
+   and inside every world, even in Reflection (slowed, never stopped).
+5. **Continuous generative music.** Each world carries its own evolving,
+   never-looping synthesized score, thinning in Reflection, swelling once under
+   Connection. The "no score" rule is repealed; the "never a theme" spirit is
+   kept — the music wanders, it does not repeat.
+6. **Vendored single-file libraries are allowed** (Three.js, committed to the
+   repo). Still no build tools, no npm install, no transpilation: the site
+   runs as written from a static server.
+
+**Unchanged and still absolute:** the five-beat arc; the Return ritual closing
+every visit; the authenticity rules (verified words only, never invented ones,
+the artist's voice as remembered echo, nothing ships that isn't cleared in
+docs/research/); the emotional ceiling; the quiet traces (never badges).

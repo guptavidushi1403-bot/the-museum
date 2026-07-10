@@ -204,6 +204,8 @@ export function createSound() {
 
   return {
     get state() { return ctx ? ctx.state : 'silent'; },
+    /** The master bus — so companion engines (the score) ride thin/hush. */
+    get output() { context(); return master; },
     context,
     unlock,
     load,
