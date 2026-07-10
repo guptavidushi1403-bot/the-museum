@@ -38,7 +38,7 @@ export function createParallax(container, {
   }
 
   function frame(now) {
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.1);
     lastTime = now;
 
     const targetX = goal.x * (1 - pull.strength) + pull.x * pull.strength;

@@ -59,7 +59,7 @@ export function createAttention({
   }
 
   function frame(now) {
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    const dt = Math.min(Math.max((now - lastTime) / 1000, 0), 0.1);
     lastTime = now;
     const lingering = pointer.present && (now - pointer.lastMove) / 1000 >= stillAfter;
 

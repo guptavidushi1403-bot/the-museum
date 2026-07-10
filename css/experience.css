@@ -1,0 +1,161 @@
+/* Rooms and painting experiences — overlays above the emotion map.
+   Same language everywhere: darkness, soft light, words that surface
+   and recede. */
+
+/* ----- shared overlay skeleton ----- */
+
+.room,
+.experience {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: #050609;
+  overflow: hidden;
+}
+
+.room-layer,
+.exp-layer {
+  position: absolute;
+  left: -50px;
+  top: -50px;
+}
+
+.exp-world {
+  position: absolute;
+  inset: 0;
+  transition: opacity 4s ease, filter 4s ease, transform 4s ease;
+}
+
+/* During Return the immersive world recedes and dims. */
+.experience.returning .exp-world {
+  opacity: 0;
+  transform: scale(0.9);
+  filter: blur(3px);
+}
+
+.exp-veil,
+.room-veil {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 1;
+  transition: opacity 3s ease;
+  pointer-events: none;
+}
+
+.exp-veil.lifted,
+.room-veil.lifted {
+  opacity: 0;
+}
+
+/* ----- reveals: remembered echoes, never narration ----- */
+
+.reveal {
+  position: absolute;
+  left: 50%;
+  bottom: 15%;
+  transform: translateX(-50%);
+  max-width: 46ch;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 2.2s ease;
+  pointer-events: none;
+}
+
+.reveal.on {
+  opacity: 1;
+}
+
+.reveal-text {
+  font: italic 400 19px/1.75 Georgia, 'Times New Roman', serif;
+  color: rgba(236, 230, 218, 0.92);
+  text-shadow: 0 1px 22px rgba(0, 0, 0, 0.95);
+}
+
+/* Environmental sense-lines: smaller, quieter than quoted words. */
+.reveal-text.sense {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: rgba(236, 230, 218, 0.78);
+}
+
+.reveal-attr {
+  margin-top: 12px;
+  font: 400 11px/1 Georgia, serif;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(236, 230, 218, 0.4);
+}
+
+/* ----- the Return ritual: frame, whole, label ----- */
+
+.whole {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 3.6s ease;
+}
+
+.whole.on {
+  opacity: 1;
+}
+
+.frame {
+  position: absolute;
+  border: 1px solid rgba(212, 193, 156, 0.55);
+  box-shadow:
+    0 0 0 7px rgba(24, 19, 12, 0.95),
+    0 0 0 8px rgba(212, 193, 156, 0.18),
+    0 30px 80px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transition: opacity 3s ease;
+  pointer-events: none;
+}
+
+.frame.on {
+  opacity: 1;
+}
+
+.exp-label {
+  position: absolute;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 2.4s ease;
+  pointer-events: none;
+}
+
+.exp-label.on {
+  opacity: 1;
+}
+
+.exp-label-title {
+  font: italic 400 17px/1.4 Georgia, serif;
+  color: rgba(236, 230, 218, 0.88);
+}
+
+.exp-label-artist {
+  margin-top: 6px;
+  font: 400 11.5px/1 Georgia, serif;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(236, 230, 218, 0.45);
+}
+
+/* ----- room specifics ----- */
+
+.room-whisper {
+  position: absolute;
+  transform: translate(-50%, 0);
+  font: italic 400 15px/1 Georgia, serif;
+  letter-spacing: 0.34em;
+  color: rgba(232, 226, 214, 0.85);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 1.8s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.room-whisper.awake {
+  opacity: 0.85;
+}

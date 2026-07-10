@@ -158,6 +158,7 @@ export function bootMap() {
   function enter(id) {
     const region = byId.get(id);
     state.mode = 'entering';
+    state.focus = id;
     whispers.get(id).classList.remove('awake');
     whispersRoot.style.opacity = '0';
 
@@ -194,15 +195,43 @@ export function bootMap() {
     }, 4600);
   }
 
-  // Rooms arrive in a later stage; when js/rooms/<id>.js exists, the map
-  // hands the visitor over instead of breathing them back out.
+  // Hand the visitor to the emotion room. The map sleeps beneath the room
+  // overlay and wakes when the room breathes the visitor back out.
   async function tryRoom(id) {
     try {
       const head = await fetch(`js/rooms/${id}.js`, { method: 'HEAD' });
       if (!head.ok) return false;
       const room = await import(`../rooms/${id}.js`);
       if (typeof room.enter !== 'function') return false;
-      room.enter({ sound, memory, attention, parallax, stage });
+
+      suspended = true;
+      attention.stop();
+      for (const air of airs.values()) air.stop?.(1.2);
+      airs.clear();
+
+      room.enter({
+        sound, memory, host: museum,
+        onLeave: () => {
+          suspended = false;
+          attention.start();
+          state.mode = 'exhale';
+          const region = byId.get(id);
+          region.trace = Math.min(memory.roomVisits(id), 3) / 3;
+          sound.restore(2.5);
+          settleToIdle(id);
+        },
+      });
+      // Reset the stage quietly behind the room overlay.
+      setTimeout(() => {
+        stage.style.transition = 'none';
+        stage.style.transform = '';
+        glowEl.classList.remove('on');
+        whispersRoot.style.opacity = '1';
+        void stage.offsetHeight;
+        stage.style.transition = '';
+        parallax.calm(1);
+        parallax.release();
+      }, 1600);
       return true;
     } catch {
       return false;
@@ -218,6 +247,10 @@ export function bootMap() {
     parallax.calm(1);
     parallax.release();
     sound.restore(3);
+    settleToIdle(visited);
+  }
+
+  function settleToIdle(visited) {
     setTimeout(() => {
       state.mode = 'idle';
       state.focus = null;
@@ -230,11 +263,17 @@ export function bootMap() {
   /* ----- the living field ----- */
   let clock = performance.now() / 1000;
   let lastAir = 0;
+  let suspended = false; // true while a room overlay owns the screen
 
   function frame(now) {
     const t = now / 1000;
-    const dt = Math.min(t - clock, 0.1);
+    const dt = Math.min(Math.max(t - clock, 0), 0.1);
     clock = t;
+
+    if (suspended) {
+      requestAnimationFrame(frame);
+      return;
+    }
 
     for (const region of regions) {
       const att = handles.get(region.id).attention;
@@ -288,6 +327,12 @@ export function bootMap() {
 
   // Arrival: the field exhales out of black. No text, no instructions.
   requestAnimationFrame(() => requestAnimationFrame(() => veil.classList.add('lifted')));
+
+  // Dev/test shortcut: ?enter=<emotion> falls straight into that room.
+  const direct = new URLSearchParams(location.search).get('enter');
+  if (direct && byId.has(direct)) {
+    setTimeout(() => { if (state.mode === 'idle') enter(direct); }, 900);
+  }
 
   // A quiet debug/testing surface; renders nothing.
   window.__museum = {

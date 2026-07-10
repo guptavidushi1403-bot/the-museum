@@ -485,3 +485,6 @@ export function createRegions() {
   }
   return regions;
 }
+
+// Rooms reuse their emotion's phenomenon, re-centered and enlarged.
+export { makeWonder, makeSerenity, makeLonging, makeIntimacy, makeAwe };
