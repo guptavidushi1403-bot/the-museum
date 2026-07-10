@@ -119,6 +119,7 @@ css/                  base.css (shared foundations) + per-surface styles
 js/main.js            Entry point; boots the emotion map
 js/core/              Shared engine: arc state machine, attention/proximity tracking,
                       parallax layers, Web Audio helpers, visit-trace memory
+js/map/               The emotion map's world: regions, atmosphere, entry ritual
 js/rooms/             One module per emotion room
 js/paintings/<name>/  One folder per painting — its scene, layers, discovery nodes, sound
 assets/art/           SVG layers / source imagery, grouped per painting

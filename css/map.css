@@ -1,0 +1,91 @@
+/* The emotion map — the museum's first world. No chrome, no controls:
+   layers of canvas, a few overlays, and words that only exist while a
+   region beckons. */
+
+#museum {
+  position: fixed;
+  inset: 0;
+}
+
+/* The stage holds the parallax layers and performs the entry ritual:
+   scaling into a region's heart when the visitor's attention commits. */
+#stage {
+  position: absolute;
+  inset: 0;
+  transition: transform 3.4s cubic-bezier(0.22, 0.61, 0.21, 1);
+  will-change: transform;
+}
+
+/* Parallax layers bleed past the viewport so their drift never
+   reveals an edge. */
+.layer {
+  position: absolute;
+  left: -80px;
+  top: -80px;
+}
+
+#whispers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 1.6s ease;
+}
+
+/* A region's name — surfacing only while it beckons, like a word
+   remembered rather than a label read. */
+.whisper {
+  position: absolute;
+  transform: translate(-50%, 0);
+  font: italic 400 15px/1 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.42em;
+  text-transform: lowercase;
+  color: rgba(232, 226, 214, 0.82);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 1.8s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.whisper.awake {
+  opacity: 0.8;
+}
+
+/* Still darkness at the edges of vision. */
+#vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 48%,
+    rgba(0, 0, 0, 0) 46%,
+    rgba(4, 5, 9, 0.36) 78%,
+    rgba(3, 4, 7, 0.62) 100%);
+}
+
+/* The entry glow: darkness closing around everything except the region
+   being entered. Its gradient is set inline, tinted by the region. */
+#glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 3s ease;
+}
+
+#glow.on {
+  opacity: 1;
+}
+
+/* Arrival: the field exhales out of black. */
+#veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: #000;
+  opacity: 1;
+  transition: opacity 4.5s ease;
+}
+
+#veil.lifted {
+  opacity: 0;
+}

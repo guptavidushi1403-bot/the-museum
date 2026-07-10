@@ -1,0 +1,32 @@
+/* Shared foundations. The museum is a dark, quiet field everywhere. */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #07080d;
+  color: #e8e2d6;
+  overflow: hidden;
+  font-family: Georgia, 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+canvas {
+  display: block;
+}
+
+.noscript {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  font-style: italic;
+  color: rgba(232, 226, 214, 0.6);
+}

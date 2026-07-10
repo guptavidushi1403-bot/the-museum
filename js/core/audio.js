@@ -120,6 +120,37 @@ export function createSound() {
   }
 
   /**
+   * A sustained tonal bed for attention-responsive ambience — world sound,
+   * not music: held partials only, never a phrase or theme. Starts silent;
+   * the scene drives its level (usually from attention) and must let it
+   * fall back to silence when attention leaves. Never leave one audible
+   * unattended — that would be a background score.
+   */
+  function drone({ frequencies = [220], type = 'sine', spread = 3 } = {}) {
+    const c = context();
+    const gain = c.createGain();
+    gain.gain.value = 0;
+    gain.connect(master);
+    const oscillators = frequencies.map((frequency) => {
+      const osc = c.createOscillator();
+      osc.type = type;
+      osc.frequency.value = frequency;
+      osc.detune.value = Math.random() * spread * 2 - spread;
+      osc.connect(gain);
+      osc.start();
+      return osc;
+    });
+    return {
+      set(level, seconds = 0.5) { ramp(gain.gain, level, seconds); },
+      stop(seconds = 2) {
+        ramp(gain.gain, 0, seconds);
+        const at = c.currentTime + seconds + 0.1;
+        for (const osc of oscillators) osc.stop(at);
+      },
+    };
+  }
+
+  /**
    * A single held tone or chord that swells and recedes — the only musical
    * gesture in the museum. Cleans itself up; cannot loop.
    */
@@ -179,6 +210,7 @@ export function createSound() {
     ambient,
     noise,
     noiseBuffer,
+    drone,
     holdTone,
     thin,
     restore,
