@@ -54,7 +54,7 @@ export default {
   artist: 'Katsushika Hokusai',
   year: 'c. 1830–32',
   emotion: 'awe',
-  aspect: 1.475,
+  aspect: 1.487,
   connectionThreshold: 3,
   connectionTone: [110.0, 164.81, 220.0],
 

@@ -45,7 +45,9 @@ export default {
   artist: 'Frida Kahlo',
   year: '1939',
   emotion: 'longing',
-  aspect: 1.0,
+  // The committed image is a landscape detail of the (square) canvas;
+  // the frame follows what is actually shown.
+  aspect: 1.54,
   connectionThreshold: 3,
   connectionTone: [174.61, 261.63],
 

@@ -73,7 +73,7 @@ export default {
   artist: 'Vincent van Gogh',
   year: '1889',
   emotion: 'wonder',
-  aspect: 1.25,
+  aspect: 1.26,
   connectionThreshold: 3,
   connectionTone: [261.63, 392.0, 523.25],
 

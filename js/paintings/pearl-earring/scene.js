@@ -31,7 +31,7 @@ export default {
   artist: 'Johannes Vermeer',
   year: 'c. 1665',
   emotion: 'intimacy',
-  aspect: 0.876,
+  aspect: 0.843,
   connectionThreshold: 3,
   connectionTone: [261.63, 329.63],
 

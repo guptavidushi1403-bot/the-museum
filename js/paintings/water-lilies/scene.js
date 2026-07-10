@@ -68,9 +68,9 @@ export default {
   slug: 'water-lilies',
   title: 'Water Lilies',
   artist: 'Claude Monet',
-  year: 'c. 1915–26',
+  year: '1906',
   emotion: 'serenity',
-  aspect: 3.0,
+  aspect: 1.04,
   connectionThreshold: 2,
   connectionTone: [196.0, 293.66],
 
