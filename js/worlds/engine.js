@@ -42,6 +42,8 @@ export async function runWorld(config, ctx, onClose) {
     scene.add(field.points);
     return field;
   });
+  const fieldByName = new Map(fields.filter((f) => f.name).map((f) => [f.name, f.points]));
+  const tickApi = { scene, field: (name) => fieldByName.get(name) };
 
   for (const g of config.glows ?? []) {
     const glow = createGlow(g.color, g.size, g.opacity ?? 0.5);
@@ -312,7 +314,7 @@ export async function runWorld(config, ctx, onClose) {
     }
 
     for (const f of fields) f.update(worldClock, tempo);
-    config.onTick?.(worldClock, tempo, scene);
+    config.onTick?.(worldClock, tempo, tickApi);
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }

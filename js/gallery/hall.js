@@ -29,11 +29,110 @@ export async function createHall(ctx, onSelect) {
   }
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050609);
-  scene.fog = new THREE.Fog(0x050609, 8, 34);
+  scene.background = new THREE.Color(0x02030a);
+  // Fog only touches the near dust and frames; the cosmos lives beyond it.
+  scene.fog = new THREE.Fog(0x02030a, 18, 60);
 
-  const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 900);
 
+  // ---- the universe the museum floats in ----
+  const cosmos = [];
+
+  // Deep starfield on a far shell, barely turning.
+  cosmos.push(createStrokeField({
+    count: 2600,
+    home: (i, r) => {
+      const a = r() * Math.PI * 2, el = Math.acos(r() * 2 - 1), R = 180 + r() * 260;
+      return [Math.sin(el) * Math.cos(a) * R, Math.cos(el) * R, Math.sin(el) * Math.sin(a) * R];
+    },
+    color: (i, r) => {
+      const p = r();
+      if (p < 0.15) return [0.7, 0.8, 1.0];   // blue-white giants
+      if (p < 0.28) return [1.0, 0.85, 0.6];  // warm stars
+      const v = 0.7 + r() * 0.3;
+      return [v, v, v];
+    },
+    size: [0.6, 2.6],
+    orbit: { radius: [0.02, 0.1], speed: [0.005, 0.02] },
+    opacity: 0.9,
+  }, rnd));
+
+  // A handful of distant nebulae — soft clouds of colored light, built
+  // entirely from (unfogged) strokes: a wide veil plus a bright core.
+  const NEBULAE = [
+    { pos: [-150, 55, -200], color: [0.55, 0.32, 0.8], size: 120 },
+    { pos: [190, -30, -230], color: [0.25, 0.55, 0.75], size: 150 },
+    { pos: [50, 110, -250], color: [0.85, 0.4, 0.45], size: 130 },
+    { pos: [-210, -70, -120], color: [0.35, 0.5, 0.85], size: 110 },
+  ];
+  for (const n of NEBULAE) {
+    // the veil
+    cosmos.push(createStrokeField({
+      count: 1100, origin: n.pos,
+      home: (i, r) => {
+        const a = r() * Math.PI * 2, rr = Math.pow(r(), 0.5) * n.size;
+        return [Math.cos(a) * rr, (r() - 0.5) * n.size * 0.5, Math.sin(a) * rr * 0.7];
+      },
+      color: (i, r) => n.color.map((c) => Math.min(1, c * (0.6 + r() * 0.8))),
+      size: [10, 30],
+      orbit: { radius: [1, 5], speed: [0.01, 0.04] },
+      opacity: 0.14,
+    }, rnd));
+    // the glowing core
+    cosmos.push(createStrokeField({
+      count: 500, origin: n.pos,
+      home: (i, r) => {
+        const a = r() * Math.PI * 2, rr = Math.pow(r(), 0.8) * n.size * 0.35;
+        return [Math.cos(a) * rr, (r() - 0.5) * n.size * 0.2, Math.sin(a) * rr];
+      },
+      color: (i, r) => n.color.map((c) => Math.min(1, c * 1.5 * (0.7 + r() * 0.6))),
+      size: [14, 40],
+      orbit: { radius: [0.5, 2], speed: [0.02, 0.06] },
+      opacity: 0.16,
+    }, rnd));
+  }
+
+  // Two spiral galaxies, slowly turning, seen at an angle — bright cores.
+  for (const g of [
+    { pos: [-90, 85, -170], tilt: 0.5, spin: 0.03, hue: [0.7, 0.78, 1.0] },
+    { pos: [175, -60, -150], tilt: -0.8, spin: -0.025, hue: [1.0, 0.88, 0.7] },
+  ]) {
+    const arms = createStrokeField({
+      count: 1400,
+      home: (i, r) => {
+        const t = Math.pow(r(), 0.5);
+        const arm = (i % 2) * Math.PI;
+        const a = arm + t * 5.5 + (r() - 0.5) * 0.5;
+        const rr = t * 55 + 4;
+        return [Math.cos(a) * rr, (r() - 0.5) * 3 * (1 - t), Math.sin(a) * rr];
+      },
+      color: (i, r) => g.hue.map((c) => Math.min(1, c * (0.5 + r() * 0.8))),
+      size: [1.6, 5],
+      orbit: { radius: [0.1, 0.6], speed: [0.02, 0.06] },
+      opacity: 0.5,
+    }, rnd);
+    arms.points.position.set(...g.pos);
+    arms.points.rotation.x = g.tilt;
+    arms.galaxySpin = g.spin;
+    cosmos.push(arms);
+    // bright galactic core, from strokes (unfogged)
+    const coreField = createStrokeField({
+      count: 300, origin: g.pos,
+      home: (i, r) => {
+        const a = r() * Math.PI * 2, rr = Math.pow(r(), 1.2) * 10;
+        return [Math.cos(a) * rr, (r() - 0.5) * 2, Math.sin(a) * rr];
+      },
+      color: () => [1.0, 0.95, 0.8],
+      size: [6, 18],
+      orbit: { radius: [0.2, 1], speed: [0.03, 0.08] },
+      opacity: 0.3,
+    }, rnd);
+    cosmos.push(coreField);
+  }
+
+  for (const c of cosmos) scene.add(c.points);
+
+  // Near dust, close to the frames, catching their light.
   const dust = createStrokeField({
     count: 900,
     home: (i, r) => [(r() - 0.5) * 30, r() * 9 - 1, (r() - 0.5) * 30],
@@ -204,6 +303,10 @@ export async function createHall(ctx, onSelect) {
     }
 
     dust.update(clock, 1);
+    for (const c of cosmos) {
+      c.update(clock, 1);
+      if (c.galaxySpin) c.points.rotation.z = clock * c.galaxySpin;
+    }
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }

@@ -56,11 +56,13 @@ const FRAGMENT = /* glsl */ `
 /**
  * spec: {
  *   count,
- *   home(i, rnd) -> [x,y,z],
+ *   home(i, rnd) -> [x,y,z],   // relative to origin if origin given
  *   color(i, rnd) -> [r,g,b] (0..1),
  *   size: [min,max],
  *   orbit: { radius: [min,max], speed: [min,max] },
- *   opacity, blending ('add'|'normal')
+ *   opacity, blending ('add'|'normal'),
+ *   origin?: [x,y,z],  // place the whole field; enables whole-element motion
+ *   name?: string      // lets a world's onTick animate this element
  * }
  */
 export function createStrokeField(spec, rnd) {
@@ -109,9 +111,12 @@ export function createStrokeField(spec, rnd) {
 
   const points = new THREE.Points(geometry, material);
   points.frustumCulled = false;
+  if (spec.origin) points.position.set(...spec.origin);
+  if (spec.name) points.userData.name = spec.name;
 
   return {
     points,
+    name: spec.name,
     baseOpacity: spec.opacity ?? 0.55,
     update(time, tempo) {
       material.uniforms.uTime.value = time;
