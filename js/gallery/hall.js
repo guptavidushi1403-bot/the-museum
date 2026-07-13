@@ -232,6 +232,7 @@ export async function createHall(ctx, onSelect) {
   let mode = 'wander'; // wander | flying
   let flyTarget = null;
   let flySlug = null;
+  let flyGroup = null;
   let clock = 0;
   let last = performance.now();
   let running = false;
@@ -241,19 +242,33 @@ export async function createHall(ctx, onSelect) {
     pointer.y = (e.clientY / innerHeight) * 2 - 1;
   }
 
+  // The luminous tone of each painting's paint — what you dissolve through
+  // when the frame becomes the world. No hard black cut.
+  const ENTRY_TINT = {
+    'starry-night': '#26397f',
+    'water-lilies': '#3f8f83',
+    'two-fridas': '#33474a',
+    'pearl-earring': '#4a3620',
+    'great-wave': '#284a86',
+  };
+
   function onClick() {
     if (mode !== 'wander' || !hovered) return;
     mode = 'flying';
     flySlug = hovered.slug;
+    flyGroup = hovered.group;
+    // fly right up to the surface of the canvas
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(hovered.group.quaternion);
-    flyTarget = hovered.pos.clone().add(fwd.multiplyScalar(1.15));
+    flyTarget = hovered.pos.clone().add(fwd.multiplyScalar(0.3));
     whisper.classList.remove('awake');
+    // dissolve through the paint: fade the screen to the painting's own tone
+    veil.style.background = ENTRY_TINT[flySlug] || '#05060b';
     setTimeout(() => {
       veil.classList.add('dark');
       setTimeout(() => {
         stop();
         onSelect(flySlug);
-      }, 1300);
+      }, 1100);
     }, 1500);
   }
 
@@ -273,9 +288,14 @@ export async function createHall(ctx, onSelect) {
       camera.position.z += (2.6 + Math.cos(clock * 0.041) * 1.8 - camera.position.z) * dt * 0.5;
       camera.lookAt(pointer.x * 5.5, 1.7 - pointer.y * 2.4, -9);
     } else if (flyTarget) {
-      camera.position.lerp(flyTarget, 1 - Math.exp(-dt * 1.7));
+      camera.position.lerp(flyTarget, 1 - Math.exp(-dt * 2.0));
       const f = frames.find((x) => x.slug === flySlug);
       camera.lookAt(f.pos);
+      // the canvas grows to fill the view — you're passing into it
+      if (flyGroup) {
+        const s = flyGroup.scale.x + (3.4 - flyGroup.scale.x) * (1 - Math.exp(-dt * 1.7));
+        flyGroup.scale.setScalar(s);
+      }
     }
 
     // Hover: the painting that holds the gaze warms and names itself.
@@ -328,6 +348,9 @@ export async function createHall(ctx, onSelect) {
     refreshEmbers();
     mode = 'wander';
     hovered = null;
+    flyTarget = null;
+    if (flyGroup) { flyGroup.scale.setScalar(1); flyGroup = null; }  // un-zoom the frame
+    veil.style.background = '';  // back to the neutral dark for gallery transitions
     const f = frames.find((x) => x.slug === slug);
     if (f) {
       const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(f.group.quaternion);

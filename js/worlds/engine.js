@@ -94,9 +94,9 @@ export async function runWorld(config, ctx, onClose) {
   /* ----- the drifting camera ----- */
   const cam = {
     angle: rnd() * Math.PI * 2,
-    radius: config.camera.radius,
+    radius: config.camera.radius * 1.8,   // start further out, then dolly in
     height: config.camera.height,
-    targetRadius: config.camera.radius,
+    targetRadius: config.camera.radius,   // ...through the surface of the canvas
     targetHeight: config.camera.height,
     targetAngle: null, // set while gliding
     speed: config.camera.speed,
@@ -234,6 +234,7 @@ export async function runWorld(config, ctx, onClose) {
     timers.push(setTimeout(() => label.classList.add('on'), T(3800)));
     memory.rememberReturn(config.slug);
     timers.push(setTimeout(() => {
+      veil.style.background = '';   // fade the world out to neutral dark for the gallery
       veil.classList.add('dark');
       timers.push(setTimeout(teardown, T(2600)));
     }, T(11500)));

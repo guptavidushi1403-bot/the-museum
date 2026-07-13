@@ -9,17 +9,21 @@
  */
 import * as THREE from '../../vendor/three.module.min.js';
 
+// Brushstrokes, not dots: each point is an oriented streak of pigment with
+// a loaded, brighter core — the visual language of the reference paintings.
 const VERTEX = /* glsl */ `
   attribute vec3 home;
   attribute vec3 tint;
   attribute float dabSize;
-  attribute vec4 orbit; // radius, speed, phase, wobble
+  attribute vec4 orbit;    // radius, speed, phase, wobble
+  attribute vec2 brush;    // angle (radians), aspect (length/width)
   uniform float uTime;
   uniform float uTempo;
   uniform float uPixelRatio;
   uniform float uSwirl;
   varying vec3 vTint;
   varying float vFade;
+  varying vec2 vBrush;
 
   void main() {
     float a = orbit.z + uTime * orbit.y * uTempo;
@@ -32,10 +36,12 @@ const VERTEX = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
     float dist = max(-mv.z, 0.5);
-    gl_PointSize = dabSize * uPixelRatio * (140.0 / dist);
+    // point sprite must fit the long axis of the streak
+    gl_PointSize = dabSize * uPixelRatio * (150.0 / dist) * max(brush.y, 1.0);
     vTint = tint;
-    // Breathe a little, each dab on its own phase.
-    vFade = 0.75 + 0.25 * sin(uTime * 0.9 * uTempo + orbit.w * 7.0);
+    vFade = 0.72 + 0.28 * sin(uTime * 0.9 * uTempo + orbit.w * 7.0);
+    // the streak's orientation drifts a touch, like a wet stroke
+    vBrush = vec2(brush.x + sin(uTime * 0.4 * uTempo + orbit.w) * 0.12, max(brush.y, 1.0));
   }
 `;
 
@@ -43,13 +49,22 @@ const FRAGMENT = /* glsl */ `
   uniform float uOpacity;
   varying vec3 vTint;
   varying float vFade;
+  varying vec2 vBrush;
 
   void main() {
-    vec2 q = gl_PointCoord - 0.5;
-    float d = length(q);
-    float alpha = smoothstep(0.5, 0.06, d) * uOpacity * vFade;
+    vec2 p = gl_PointCoord - 0.5;
+    // rotate into the stroke's frame, then squeeze the short axis to a streak
+    float c = cos(vBrush.x), s = sin(vBrush.x);
+    vec2 q = vec2(p.x * c - p.y * s, p.x * s + p.y * c);
+    q.y *= vBrush.y;                 // aspect > 1 => long, thin brushstroke
+    float d = length(q) * 2.0;       // 0 at center, ~1 at the tip
+    float body = smoothstep(1.0, 0.04, d);
+    // a brighter loaded core down the spine of the stroke
+    float core = smoothstep(0.5, 0.0, abs(q.y) * 2.0) * smoothstep(1.0, 0.2, abs(q.x) * 2.0);
+    float alpha = body * uOpacity * vFade;
     if (alpha < 0.003) discard;
-    gl_FragColor = vec4(vTint, alpha);
+    vec3 col = vTint + core * 0.16;  // loaded paint catches the light
+    gl_FragColor = vec4(col, alpha);
   }
 `;
 
@@ -62,7 +77,9 @@ const FRAGMENT = /* glsl */ `
  *   orbit: { radius: [min,max], speed: [min,max] },
  *   opacity, blending ('add'|'normal'),
  *   origin?: [x,y,z],  // place the whole field; enables whole-element motion
- *   name?: string      // lets a world's onTick animate this element
+ *   name?: string,     // lets a world's onTick animate this element
+ *   aspect?: [min,max],   // brushstroke length/width (1 = round dab; ~3 = ribbon)
+ *   angle?: 'flow'|'swirl'|'vertical'|number|fn(i,rnd,home)  // stroke orientation
  * }
  */
 export function createStrokeField(spec, rnd) {
@@ -71,10 +88,23 @@ export function createStrokeField(spec, rnd) {
   const tint = new Float32Array(count * 3);
   const dabSize = new Float32Array(count);
   const orbit = new Float32Array(count * 4);
+  const brush = new Float32Array(count * 2);
 
   const [s0, s1] = spec.size;
   const [or0, or1] = spec.orbit?.radius ?? [0.1, 0.4];
   const [os0, os1] = spec.orbit?.speed ?? [0.05, 0.2];
+  const [as0, as1] = spec.aspect ?? [1, 1];
+  const angleSpec = spec.angle;
+
+  function angleFor(i, h) {
+    if (typeof angleSpec === 'function') return angleSpec(i, rnd, h);
+    if (typeof angleSpec === 'number') return angleSpec + (rnd() - 0.5) * 0.4;
+    if (angleSpec === 'swirl') return Math.atan2(h[1], h[0]) + Math.PI / 2; // tangent to origin
+    if (angleSpec === 'flow') return Math.atan2(h[1], h[0]);                 // radial
+    if (angleSpec === 'vertical') return Math.PI / 2 + (rnd() - 0.5) * 0.5;
+    if (angleSpec === 'horizontal') return (rnd() - 0.5) * 0.5;
+    return rnd() * Math.PI * 2;                                              // random
+  }
 
   for (let i = 0; i < count; i++) {
     const h = spec.home(i, rnd);
@@ -85,6 +115,8 @@ export function createStrokeField(spec, rnd) {
     orbit[i * 4 + 1] = (os0 + rnd() * (os1 - os0)) * (rnd() < 0.5 ? -1 : 1);
     orbit[i * 4 + 2] = rnd() * Math.PI * 2;
     orbit[i * 4 + 3] = rnd() * Math.PI * 2;
+    brush[i * 2] = angleFor(i, h);
+    brush[i * 2 + 1] = as0 + rnd() * (as1 - as0);
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -93,6 +125,7 @@ export function createStrokeField(spec, rnd) {
   geometry.setAttribute('tint', new THREE.BufferAttribute(tint, 3));
   geometry.setAttribute('dabSize', new THREE.BufferAttribute(dabSize, 1));
   geometry.setAttribute('orbit', new THREE.BufferAttribute(orbit, 4));
+  geometry.setAttribute('brush', new THREE.BufferAttribute(brush, 2));
 
   const material = new THREE.ShaderMaterial({
     vertexShader: VERTEX,

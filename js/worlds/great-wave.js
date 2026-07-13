@@ -32,9 +32,9 @@ export default {
         const v = 0.55 + r() * 0.45;
         return [0.08 * v, 0.22 * v, 0.55 * v];
       },
-      size: [0.5, 1.6],
+      size: [0.5, 1.6], aspect: [2.4, 3.6], angle: 'horizontal',  // flowing sea lines
       orbit: { radius: [0.3, 1.0], speed: [0.1, 0.3] },
-      opacity: 0.5,
+      opacity: 0.52,
     },
 
     // ---- the great wave body: a wall of blue rising on one side ----
@@ -56,9 +56,10 @@ export default {
         const v = 0.4 + r() * 0.5;
         return [0.07 * v, 0.2 * v, 0.5 * v];
       },
-      size: [0.6, 1.8],
+      size: [0.6, 1.8], aspect: [2.4, 3.8],
+      angle: (i, rnd, h) => Math.atan2(h[1], h[0]) + (rnd() - 0.5) * 0.5,  // curl of the wave
       orbit: { radius: [0.2, 0.8], speed: [0.12, 0.35] },
-      opacity: 0.6,
+      opacity: 0.62,
     },
 
     // ---- the claw: foam fingers curling off the crest ----
@@ -72,9 +73,9 @@ export default {
         return [base + Math.sin(t * 6) * 0.6, 12 - droop + Math.sin(t * 10) * 0.3, -t * 5 - 1];
       },
       color: (i, r) => (r() < 0.7 ? [0.9, 0.95, 0.98] : [0.75, 0.85, 0.95]),
-      size: [0.4, 1.3],
+      size: [0.4, 1.3], aspect: [2.2, 3.6], angle: 'flow',  // foam fingers curl outward
       orbit: { radius: [0.15, 0.7], speed: [0.2, 0.55] },
-      opacity: 0.7,
+      opacity: 0.72,
     },
     // spray flung from the claw
     {

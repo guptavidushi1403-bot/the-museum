@@ -129,13 +129,14 @@
   color: rgba(236, 230, 214, 0.45);
 }
 
-/* Transitions pass through the dark. */
+/* Entering a painting dissolves the screen through that painting's own
+   paint tone (set inline), then the world emerges from it — no black cut. */
 #veil {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: #05060b;
   opacity: 0;
-  transition: opacity 2.4s ease;
+  transition: opacity 1.8s ease;
   pointer-events: none;
 }
 

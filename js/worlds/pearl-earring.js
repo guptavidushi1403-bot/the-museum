@@ -57,12 +57,12 @@ export default {
       },
       color: (i, r) => {
         const p = r();
-        if (p < 0.15) return [0.85, 0.5, 0.45];   // lips
-        return [0.75 + r() * 0.2, 0.6 + r() * 0.15, 0.5];  // lit skin
+        if (p < 0.15) return [0.8, 0.45, 0.4];    // lips
+        return [0.7 + r() * 0.18, 0.56 + r() * 0.14, 0.46];  // lit skin
       },
-      size: [0.3, 0.9],
+      size: [0.35, 1.0], aspect: [1.2, 1.7], angle: (i, rnd) => rnd() * Math.PI * 2,
       orbit: { radius: [0.02, 0.08], speed: [0.02, 0.08] },
-      opacity: 0.6,
+      opacity: 0.95, blending: 'normal',   // skin is paint, not light
     },
 
     // ---- the turban: ultramarine wound above ----
@@ -74,18 +74,18 @@ export default {
         return [Math.cos(a) * rr, Math.sin(a) * rr * 0.6, (r() - 0.5) * 0.5];
       },
       color: (i, r) => [0.13, 0.28 + r() * 0.12, 0.72 + r() * 0.15],
-      size: [0.35, 0.9],
+      size: [0.35, 0.9], aspect: [1.5, 2.2], angle: 'swirl',  // cloth wound around
       orbit: { radius: [0.02, 0.08], speed: [0.03, 0.1] },
-      opacity: 0.8,
+      opacity: 0.95, blending: 'normal',
     },
     // the lemon fall of cloth behind
     {
       origin: [HER[0] + 0.5, HER[1] + 0.3, HER[2] - 0.2], count: 340,
       home: (i, r) => [(r() - 0.5) * 0.5, -r() * 1.6, (r() - 0.5) * 0.4],
       color: (i, r) => [0.86, 0.74 + r() * 0.1, 0.32],
-      size: [0.3, 0.8],
+      size: [0.3, 0.8], aspect: [1.4, 2.2], angle: 'vertical',
       orbit: { radius: [0.01, 0.06], speed: [0.02, 0.08] },
-      opacity: 0.7,
+      opacity: 0.9, blending: 'normal',
     },
 
     // ---- the white collar ----
@@ -96,9 +96,9 @@ export default {
         return [Math.cos(a) * 0.6, Math.sin(a) * 0.2, 0.2 + (r() - 0.5) * 0.3];
       },
       color: () => [0.9, 0.88, 0.82],
-      size: [0.3, 0.7],
+      size: [0.3, 0.7], aspect: [1.4, 2.0], angle: 'horizontal',
       orbit: { radius: [0.01, 0.05], speed: [0.02, 0.08] },
-      opacity: 0.55,
+      opacity: 0.9, blending: 'normal',
     },
 
     // ---- the pearl: two strokes of white, close enough to reach ----
@@ -117,8 +117,8 @@ export default {
   ],
 
   glows: [
-    { pos: [HER[0] - 0.1, HER[1], HER[2] + 0.3], color: 0xd8a668, size: 3.2, opacity: 0.4 }, // candlelight on her
-    { pos: PEARL, color: 0xcfe0f2, size: 0.7, opacity: 0.9 },   // the pearl
+    { pos: [HER[0] - 0.3, HER[1] + 0.1, HER[2] + 0.6], color: 0xcaa066, size: 2.4, opacity: 0.22 }, // candlelight
+    { pos: PEARL, color: 0xcfe0f2, size: 0.6, opacity: 0.8 },   // the pearl
   ],
 
   nodes: [

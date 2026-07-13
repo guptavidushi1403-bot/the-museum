@@ -42,7 +42,7 @@ export default {
   seed: 1939,
   background: 0x14201f,
   fog: [0x14201f, 16, 70],
-  camera: { radius: 8.5, height: 2.2, speed: 0.024, bob: 0.3, lookHeight: 2.6 },
+  camera: { radius: 10, height: 2.4, speed: 0.024, bob: 0.3, lookHeight: 2.4 },
 
   strokes: [
     // ---- the storm sky, churning behind ----
@@ -58,19 +58,20 @@ export default {
         if (p < 0.85) return [0.34, 0.42, 0.44];
         return [0.55, 0.6, 0.6];
       },
-      size: [0.8, 2.4],
+      size: [0.8, 2.2], aspect: [2.2, 3.4],
+      angle: (i, rnd, h) => Math.atan2(h[2], h[0]) + Math.PI / 2 + (rnd() - 0.5) * 0.7,
       orbit: { radius: [0.3, 1.2], speed: [0.05, 0.16] },
-      opacity: 0.32,
+      opacity: 0.34,
     },
 
     // ---- white Frida (lace) ----
     {
       origin: HEART_L.map((v, k) => (k === 1 ? -2.2 : v)), count: 1500,
       home: figure(),
-      color: (i, r) => [0.9, 0.88 - r() * 0.06, 0.78],
-      size: [0.35, 1.0],
+      color: (i, r) => [0.82, 0.8 - r() * 0.08, 0.72],   // soft bone-white, not glaring
+      size: [0.4, 1.1], aspect: [1.6, 2.6], angle: 'vertical',
       orbit: { radius: [0.05, 0.2], speed: [0.05, 0.18] },
-      opacity: 0.6,
+      opacity: 0.82, blending: 'normal',
     },
     // ---- Tehuana Frida (earth/teal/carmine) ----
     {
@@ -82,9 +83,9 @@ export default {
         if (p < 0.72) return [0.55, 0.32, 0.14];
         return [0.72, 0.14, 0.2];
       },
-      size: [0.35, 1.0],
+      size: [0.4, 1.1], aspect: [1.6, 2.6], angle: 'vertical',
       orbit: { radius: [0.05, 0.2], speed: [0.05, 0.18] },
-      opacity: 0.62,
+      opacity: 0.9, blending: 'normal',
     },
 
     // ---- the two hearts, exposed ----
