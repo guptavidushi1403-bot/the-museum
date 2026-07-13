@@ -9,6 +9,46 @@
  */
 import * as THREE from '../../vendor/three.module.min.js';
 
+// A real oil-brushstroke stamp: a loaded horizontal streak with bristle
+// grooves and an impasto highlight, feathered at the ends. Every stroke
+// samples this, rotated and squeezed to its own angle and length, so the
+// worlds read as thick living paint rather than soft dots.
+let brushTexture = null;
+function getBrushTexture() {
+  if (brushTexture) return brushTexture;
+  const W = 128, H = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(W, H);
+  const buf = img.data;
+  const cy = H / 2;
+  for (let x = 0; x < W; x++) {
+    const u = x / (W - 1);
+    const halfH = Math.sin(u * Math.PI) * (H * 0.44);   // feather the ends
+    for (let y = 0; y < H; y++) {
+      const i = (y * W + x) * 4;
+      if (halfH < 0.5) { buf[i + 3] = 0; continue; }
+      const dy = (y - cy) / halfH;
+      if (Math.abs(dy) > 1) { buf[i + 3] = 0; continue; }
+      // bristle grooves along the length + an impasto ridge above centre
+      const bristle = 0.6 + 0.4 * Math.sin(y * 1.7 + Math.sin(u * 9) * 1.6);
+      const ridge = Math.exp(-Math.pow((dy + 0.25) * 2.1, 2)) * 0.55;
+      const body = Math.pow(1 - Math.abs(dy), 0.7);
+      const bright = Math.min(1, bristle * body + ridge);
+      const alpha = Math.pow(body, 1.1) * (0.82 + 0.18 * bristle);
+      const v = Math.round(bright * 255);
+      buf[i] = v; buf[i + 1] = v; buf[i + 2] = v;
+      buf[i + 3] = Math.round(alpha * 255);
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  brushTexture = new THREE.CanvasTexture(canvas);
+  brushTexture.minFilter = THREE.LinearFilter;
+  brushTexture.magFilter = THREE.LinearFilter;
+  return brushTexture;
+}
+
 // Brushstrokes, not dots: each point is an oriented streak of pigment with
 // a loaded, brighter core — the visual language of the reference paintings.
 const VERTEX = /* glsl */ `
@@ -47,6 +87,7 @@ const VERTEX = /* glsl */ `
 
 const FRAGMENT = /* glsl */ `
   uniform float uOpacity;
+  uniform sampler2D uBrush;
   varying vec3 vTint;
   varying float vFade;
   varying vec2 vBrush;
@@ -56,14 +97,13 @@ const FRAGMENT = /* glsl */ `
     // rotate into the stroke's frame, then squeeze the short axis to a streak
     float c = cos(vBrush.x), s = sin(vBrush.x);
     vec2 q = vec2(p.x * c - p.y * s, p.x * s + p.y * c);
-    q.y *= vBrush.y;                 // aspect > 1 => long, thin brushstroke
-    float d = length(q) * 2.0;       // 0 at center, ~1 at the tip
-    float body = smoothstep(1.0, 0.04, d);
-    // a brighter loaded core down the spine of the stroke
-    float core = smoothstep(0.5, 0.0, abs(q.y) * 2.0) * smoothstep(1.0, 0.2, abs(q.x) * 2.0);
-    float alpha = body * uOpacity * vFade;
-    if (alpha < 0.003) discard;
-    vec3 col = vTint + core * 0.16;  // loaded paint catches the light
+    vec2 uv = vec2(q.x + 0.5, q.y * vBrush.y + 0.5);   // sample the oil-brush stamp
+    if (uv.y < 0.0 || uv.y > 1.0) discard;
+    vec4 tx = texture2D(uBrush, uv);
+    float alpha = tx.a * uOpacity * vFade;
+    if (alpha < 0.004) discard;
+    // bristle grooves and the impasto ridge ride as lighter paint over the tint
+    vec3 col = vTint * (0.7 + 0.55 * tx.r);
     gl_FragColor = vec4(col, alpha);
   }
 `;
@@ -139,6 +179,7 @@ export function createStrokeField(spec, rnd) {
       uPixelRatio: { value: Math.min(devicePixelRatio || 1, 2) },
       uSwirl: { value: 1 },
       uOpacity: { value: spec.opacity ?? 0.55 },
+      uBrush: { value: getBrushTexture() },
     },
   });
 

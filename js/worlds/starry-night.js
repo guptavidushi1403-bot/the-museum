@@ -28,9 +28,9 @@ function spiralAngle(i, rnd, h) {
 }
 
 // A single star as a tight spiral swirl of bright strokes.
-function starField(pos, radius, warm) {
+function starField(pos, radius, warm, name) {
   return {
-    origin: pos, count: 70,
+    name, origin: pos, count: 70,
     home: spiral(1.5, radius, radius * 0.25),
     color: (i, r) => (warm
       ? [0.95, 0.8 + r() * 0.15, 0.42 + r() * 0.18]
@@ -168,8 +168,8 @@ export default {
       opacity: 0.42,
     },
 
-    // ---- the eleven stars as spiral swirls ----
-    ...STARS.map((p, i) => starField(p, i === 0 ? 2.4 : 1.2 + (i % 3) * 0.3, i % 2 === 0)),
+    // ---- the eleven stars as spiral swirls, each named so it can pulse ----
+    ...STARS.map((p, i) => starField(p, i === 0 ? 2.4 : 1.2 + (i % 3) * 0.3, i % 2 === 0, `star${i}`)),
   ],
 
   glows: [
@@ -193,6 +193,19 @@ export default {
     if (a) a.rotation.z = clock * 0.22 * tempo;
     if (b) b.rotation.z = -clock * 0.26 * tempo;
     if (sky) sky.rotation.y = clock * 0.01 * tempo; // the whole sky slowly turns
+
+    // the cypress sways like a dark flame in the night wind
+    const cy = api.field('cypress');
+    if (cy) cy.rotation.z = Math.sin(clock * 0.5 * tempo) * 0.05 + Math.sin(clock * 0.23) * 0.02;
+
+    // each star pulses and slowly turns
+    for (let i = 0; i < 8; i++) {
+      const st = api.field(`star${i}`);
+      if (!st) continue;
+      st.rotation.z = clock * (0.1 + (i % 3) * 0.04) * tempo * (i % 2 ? -1 : 1);
+      const pulse = 1 + 0.18 * Math.sin(clock * (0.8 + i * 0.13) * tempo + i);
+      st.scale.setScalar(pulse);
+    }
   },
 
   music: {

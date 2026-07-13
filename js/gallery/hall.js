@@ -233,6 +233,13 @@ export async function createHall(ctx, onSelect) {
   let flyTarget = null;
   let flySlug = null;
   let flyGroup = null;
+  let burst = null;       // swirling paint you are pulled through
+  let burstStart = 0;
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+  }
   let clock = 0;
   let last = performance.now();
   let running = false;
@@ -261,15 +268,43 @@ export async function createHall(ctx, onSelect) {
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(hovered.group.quaternion);
     flyTarget = hovered.pos.clone().add(fwd.multiplyScalar(0.3));
     whisper.classList.remove('awake');
+
+    // the canvas comes alive: a swirl of its own paint streams toward you,
+    // so you feel pulled through the surface rather than cut to a new scene
+    const tint = ENTRY_TINT[flySlug] || '#3a4a7a';
+    const [br, bg, bb] = hexToRgb(tint);
+    burst = createStrokeField({
+      count: 520,
+      home: (i, r) => {
+        const a = r() * Math.PI * 2, rr = Math.pow(r(), 0.6) * 3.2;
+        return [Math.cos(a) * rr, Math.sin(a) * rr, r() * 7];  // a cone toward the viewer
+      },
+      color: (i, r) => (r() < 0.28
+        ? [1.0, 0.92, 0.6]
+        : [Math.min(1, br * 1.8 + 0.1), Math.min(1, bg * 1.8 + 0.1), Math.min(1, bb * 1.8 + 0.2)]),
+      size: [1.0, 2.6], aspect: [2.6, 4.4], angle: 'swirl',
+      orbit: { radius: [0.3, 1.2], speed: [0.4, 1.0] },
+      opacity: 0.0,
+    }, rnd);
+    burst.points.position.copy(hovered.pos);
+    burst.points.quaternion.copy(hovered.group.quaternion);
+    scene.add(burst.points);
+    burstStart = clock;
+
     // dissolve through the paint: fade the screen to the painting's own tone
-    veil.style.background = ENTRY_TINT[flySlug] || '#05060b';
+    veil.style.background = tint;
     setTimeout(() => {
       veil.classList.add('dark');
       setTimeout(() => {
+        clearBurst();
         stop();
         onSelect(flySlug);
       }, 1100);
     }, 1500);
+  }
+
+  function clearBurst() {
+    if (burst) { scene.remove(burst.points); burst.dispose(); burst = null; }
   }
 
   addEventListener('pointermove', onMove);
@@ -295,6 +330,14 @@ export async function createHall(ctx, onSelect) {
       if (flyGroup) {
         const s = flyGroup.scale.x + (3.4 - flyGroup.scale.x) * (1 - Math.exp(-dt * 1.7));
         flyGroup.scale.setScalar(s);
+      }
+      // the paint swirls up and streams toward you
+      if (burst) {
+        const age = clock - burstStart;
+        burst.update(clock, 3);
+        burst.setOpacity(Math.min(0.7, age * 1.2) * Math.max(0, 1 - age * 0.45));
+        burst.points.scale.setScalar(1 + age * 2.8);
+        burst.points.rotation.z = age * 2.2;
       }
     }
 
@@ -349,6 +392,7 @@ export async function createHall(ctx, onSelect) {
     mode = 'wander';
     hovered = null;
     flyTarget = null;
+    clearBurst();
     if (flyGroup) { flyGroup.scale.setScalar(1); flyGroup = null; }  // un-zoom the frame
     veil.style.background = '';  // back to the neutral dark for gallery transitions
     const f = frames.find((x) => x.slug === slug);
