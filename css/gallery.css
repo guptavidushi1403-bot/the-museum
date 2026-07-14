@@ -20,7 +20,7 @@
   left: 50%;
   bottom: 11%;
   transform: translateX(-50%);
-  font: italic 400 16px/1 Georgia, 'Times New Roman', serif;
+  font: italic 400 clamp(13px, 3.4vw, 16px)/1 Georgia, 'Times New Roman', serif;
   letter-spacing: 0.4em;
   text-transform: lowercase;
   color: rgba(232, 226, 214, 0.85);
@@ -41,7 +41,7 @@
   left: 50%;
   bottom: 15%;
   transform: translateX(-50%);
-  max-width: 46ch;
+  max-width: min(46ch, 86vw);
   text-align: center;
   opacity: 0;
   transition: opacity 2.2s ease;
@@ -53,7 +53,7 @@
 }
 
 .reveal-text {
-  font: italic 400 19px/1.75 Georgia, 'Times New Roman', serif;
+  font: italic 400 clamp(15px, 4vw, 19px)/1.75 Georgia, 'Times New Roman', serif;
   color: rgba(236, 230, 218, 0.92);
   text-shadow: 0 1px 22px rgba(0, 0, 0, 0.95);
 }
@@ -117,7 +117,7 @@
 }
 
 .exp-label-title {
-  font: italic 400 17px/1.4 Georgia, serif;
+  font: italic 400 clamp(14px, 3.6vw, 17px)/1.4 Georgia, serif;
   color: rgba(236, 230, 218, 0.88);
 }
 
@@ -127,6 +127,67 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(236, 230, 214, 0.45);
+}
+
+/* The museum plaque: always-available return, styled as part of the
+   museum — never a browser button. Touch-sized on every device. */
+.plaque {
+  position: fixed;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 40;
+  padding: 12px 20px;
+  min-height: 44px;
+  font: italic 400 clamp(12px, 2.6vw, 14px)/1 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.18em;
+  color: rgba(232, 226, 214, 0.85);
+  background: rgba(10, 9, 12, 0.45);
+  border: 1px solid rgba(212, 193, 156, 0.4);
+  border-radius: 2px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.6s ease, border-color 0.4s ease, color 0.4s ease;
+}
+
+.plaque.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.plaque:hover,
+.plaque:focus-visible {
+  color: rgba(244, 238, 224, 1);
+  border-color: rgba(224, 205, 165, 0.8);
+  outline: none;
+}
+
+/* A quiet cue that the museum is changing rooms on purpose. */
+.passage {
+  position: fixed;
+  left: 50%;
+  top: 55%;
+  transform: translateX(-50%);
+  z-index: 45;
+  font: italic 400 clamp(13px, 3vw, 16px)/1 Georgia, serif;
+  letter-spacing: 0.3em;
+  color: rgba(238, 232, 220, 0.75);
+  text-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  pointer-events: none;
+}
+
+.passage.on {
+  opacity: 1;
+  animation: passage-breathe 2.2s ease-in-out infinite;
+}
+
+@keyframes passage-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.95; }
 }
 
 /* Entering a painting dissolves the screen through that painting's own

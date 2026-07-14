@@ -29,118 +29,94 @@ export async function createHall(ctx, onSelect) {
   }
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x02030a);
-  // Fog only touches the near dust and frames; the cosmos lives beyond it.
-  scene.fog = new THREE.Fog(0x02030a, 18, 60);
+  // A grand, calm exhibition hall: warm charcoal depths, not outer space.
+  scene.background = new THREE.Color(0x0b0b0f);
+  scene.fog = new THREE.Fog(0x0b0b0f, 16, 52);
 
-  const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 900);
+  const portrait = innerWidth < innerHeight;
+  const camera = new THREE.PerspectiveCamera(portrait ? 66 : 55, innerWidth / innerHeight, 0.1, 200);
 
-  // ---- the universe the museum floats in ----
-  const cosmos = [];
+  // Palette per painting — the light each frame casts, and the brushstrokes
+  // that escape it. Authentic to each artwork, never generic.
+  const PALETTE = {
+    'starry-night': { glow: 0x3b5bd0, strokes: [[0.96, 0.82, 0.4], [0.32, 0.45, 0.9], [0.85, 0.9, 1.0]] },
+    'water-lilies': { glow: 0x49a08e, strokes: [[0.35, 0.68, 0.6], [0.98, 0.72, 0.8], [0.98, 0.93, 0.6]] },
+    'two-fridas': { glow: 0xc23048, strokes: [[0.82, 0.16, 0.24], [0.16, 0.5, 0.44], [0.9, 0.86, 0.78]] },
+    'pearl-earring': { glow: 0xcaa15e, strokes: [[0.86, 0.66, 0.34], [0.2, 0.34, 0.72], [0.92, 0.9, 0.84]] },
+    'great-wave': { glow: 0x2f5aa0, strokes: [[0.1, 0.26, 0.55], [0.86, 0.93, 0.98], [0.82, 0.78, 0.64]] },
+  };
 
-  // Deep starfield on a far shell, barely turning.
-  cosmos.push(createStrokeField({
-    count: 2600,
-    home: (i, r) => {
-      const a = r() * Math.PI * 2, el = Math.acos(r() * 2 - 1), R = 180 + r() * 260;
-      return [Math.sin(el) * Math.cos(a) * R, Math.cos(el) * R, Math.sin(el) * Math.sin(a) * R];
-    },
-    color: (i, r) => {
-      const p = r();
-      if (p < 0.15) return [0.7, 0.8, 1.0];   // blue-white giants
-      if (p < 0.28) return [1.0, 0.85, 0.6];  // warm stars
-      const v = 0.7 + r() * 0.3;
-      return [v, v, v];
-    },
-    size: [0.6, 2.6],
-    orbit: { radius: [0.02, 0.1], speed: [0.005, 0.02] },
-    opacity: 0.9,
-  }, rnd));
+  // ---- the exhibition hall the paintings hang in ----
+  const ambient = [];   // updatable fields
+  const beams = [];      // per-frame volumetric spotlights
 
-  // A handful of distant nebulae — soft clouds of colored light, built
-  // entirely from (unfogged) strokes: a wide veil plus a bright core.
-  const NEBULAE = [
-    { pos: [-150, 55, -200], color: [0.55, 0.32, 0.8], size: 120 },
-    { pos: [190, -30, -230], color: [0.25, 0.55, 0.75], size: 150 },
-    { pos: [50, 110, -250], color: [0.85, 0.4, 0.45], size: 130 },
-    { pos: [-210, -70, -120], color: [0.35, 0.5, 0.85], size: 110 },
-  ];
-  for (const n of NEBULAE) {
-    // the veil
-    cosmos.push(createStrokeField({
-      count: 1100, origin: n.pos,
-      home: (i, r) => {
-        const a = r() * Math.PI * 2, rr = Math.pow(r(), 0.5) * n.size;
-        return [Math.cos(a) * rr, (r() - 0.5) * n.size * 0.5, Math.sin(a) * rr * 0.7];
-      },
-      color: (i, r) => n.color.map((c) => Math.min(1, c * (0.6 + r() * 0.8))),
-      size: [10, 30],
-      orbit: { radius: [1, 5], speed: [0.01, 0.04] },
-      opacity: 0.14,
-    }, rnd));
-    // the glowing core
-    cosmos.push(createStrokeField({
-      count: 500, origin: n.pos,
-      home: (i, r) => {
-        const a = r() * Math.PI * 2, rr = Math.pow(r(), 0.8) * n.size * 0.35;
-        return [Math.cos(a) * rr, (r() - 0.5) * n.size * 0.2, Math.sin(a) * rr];
-      },
-      color: (i, r) => n.color.map((c) => Math.min(1, c * 1.5 * (0.7 + r() * 0.6))),
-      size: [14, 40],
-      orbit: { radius: [0.5, 2], speed: [0.02, 0.06] },
-      opacity: 0.16,
-    }, rnd));
+  // A soft vertical light beam (volumetric spotlight) as a sprite texture.
+  function beamTexture() {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 256;
+    const g = c.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, 'rgba(255,255,255,0.55)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    for (let x = 0; x < 64; x++) {
+      const edge = 1 - Math.abs(x - 32) / 32;
+      g.globalAlpha = Math.pow(edge, 1.4);
+      g.fillStyle = grad;
+      g.fillRect(x, 0, 1, 256);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+  const BEAM_TEX = beamTexture();
+
+  // Reflective black floor: a broad dark plane with a soft central sheen.
+  {
+    const c = document.createElement('canvas');
+    c.width = c.height = 512;
+    const g = c.getContext('2d');
+    g.fillStyle = '#070708';
+    g.fillRect(0, 0, 512, 512);
+    const grad = g.createRadialGradient(256, 180, 20, 256, 256, 300);
+    grad.addColorStop(0, 'rgba(60,62,74,0.5)');
+    grad.addColorStop(1, 'rgba(7,7,8,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 512, 512);
+    const floorTex = new THREE.CanvasTexture(c);
+    floorTex.colorSpace = THREE.SRGBColorSpace;
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(120, 120),
+      new THREE.MeshBasicMaterial({ map: floorTex, transparent: true, opacity: 0.9 }),
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -1.4;
+    scene.add(floor);
   }
 
-  // Two spiral galaxies, slowly turning, seen at an angle — bright cores.
-  for (const g of [
-    { pos: [-90, 85, -170], tilt: 0.5, spin: 0.03, hue: [0.7, 0.78, 1.0] },
-    { pos: [175, -60, -150], tilt: -0.8, spin: -0.025, hue: [1.0, 0.88, 0.7] },
-  ]) {
-    const arms = createStrokeField({
-      count: 1400,
-      home: (i, r) => {
-        const t = Math.pow(r(), 0.5);
-        const arm = (i % 2) * Math.PI;
-        const a = arm + t * 5.5 + (r() - 0.5) * 0.5;
-        const rr = t * 55 + 4;
-        return [Math.cos(a) * rr, (r() - 0.5) * 3 * (1 - t), Math.sin(a) * rr];
-      },
-      color: (i, r) => g.hue.map((c) => Math.min(1, c * (0.5 + r() * 0.8))),
-      size: [1.6, 5],
-      orbit: { radius: [0.1, 0.6], speed: [0.02, 0.06] },
-      opacity: 0.5,
-    }, rnd);
-    arms.points.position.set(...g.pos);
-    arms.points.rotation.x = g.tilt;
-    arms.galaxySpin = g.spin;
-    cosmos.push(arms);
-    // bright galactic core, from strokes (unfogged)
-    const coreField = createStrokeField({
-      count: 300, origin: g.pos,
-      home: (i, r) => {
-        const a = r() * Math.PI * 2, rr = Math.pow(r(), 1.2) * 10;
-        return [Math.cos(a) * rr, (r() - 0.5) * 2, Math.sin(a) * rr];
-      },
-      color: () => [1.0, 0.95, 0.8],
-      size: [6, 18],
-      orbit: { radius: [0.2, 1], speed: [0.03, 0.08] },
-      opacity: 0.3,
-    }, rnd);
-    cosmos.push(coreField);
+  // A high, soft volumetric wash of light — the museum's calm ceiling glow.
+  const ceiling = createGlow(0xdfe4f0, 46, 0.06);
+  ceiling.position.set(0, 15, -8);
+  scene.add(ceiling);
+  // A distant back wall, giving the room architectural depth.
+  {
+    const wall = new THREE.Mesh(
+      new THREE.PlaneGeometry(120, 44),
+      new THREE.MeshBasicMaterial({ color: 0x111117, transparent: true, opacity: 0.85 }),
+    );
+    wall.position.set(0, 6, -26);
+    scene.add(wall);
   }
 
-  for (const c of cosmos) scene.add(c.points);
-
-  // Near dust, close to the frames, catching their light.
+  // Gentle museum air: soft motes drifting in the light.
   const dust = createStrokeField({
-    count: 900,
-    home: (i, r) => [(r() - 0.5) * 30, r() * 9 - 1, (r() - 0.5) * 30],
-    color: (i, r) => (r() < 0.8 ? [0.55, 0.55, 0.6] : [0.8, 0.7, 0.45]),
-    size: [0.15, 0.5],
-    orbit: { radius: [0.2, 0.9], speed: [0.03, 0.12] },
-    opacity: 0.35,
+    count: 520,
+    home: (i, r) => [(r() - 0.5) * 34, r() * 12 - 1.5, (r() - 0.5) * 24 - 4],
+    color: (i, r) => (r() < 0.8 ? [0.6, 0.6, 0.66] : [0.85, 0.75, 0.5]),
+    size: [0.12, 0.4], aspect: [1, 1.6],
+    orbit: { radius: [0.15, 0.7], speed: [0.02, 0.08] },
+    opacity: 0.3,
   }, rnd);
+  ambient.push(dust);
   scene.add(dust.points);
 
   /* ----- the five windows ----- */
@@ -206,21 +182,56 @@ export async function createHall(ctx, onSelect) {
       group.add(mesh);
     }
 
-    const halo = createGlow(0xf4dfae, Math.max(w, h) * 2.1, 0.1);
+    const pal = PALETTE[slug] || { glow: 0xf4dfae, strokes: [[0.9, 0.8, 0.5]] };
+
+    // The frame's own light, in the painting's colour.
+    const halo = createGlow(pal.glow, Math.max(w, h) * 2.0, 0.08);
     halo.position.set(0, 0, -0.4);
     group.add(halo);
+
+    // A soft spotlight beam falling on the canvas from above.
+    const beam = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: BEAM_TEX, color: 0xf3ecdd, transparent: true, opacity: 0.14,
+      depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+    beam.scale.set(w * 1.5, h * 2.6, 1);
+    beam.position.set(pos.x, pos.y + h * 1.4, pos.z);
+    scene.add(beam);
+    beams.push({ beam, base: 0.14 });
+
+    // A faint reflection of the canvas on the glossy floor.
+    const refl = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.1, depthWrite: false, toneMapped: false }),
+    );
+    refl.position.set(pos.x, -1.4 - (pos.y + 1.4), pos.z);
+    refl.quaternion.copy(group.quaternion);
+    refl.scale.y = -1;
+    scene.add(refl);
+
+    // Brushstrokes that escape the frame — the painting is already alive.
+    const escape = createStrokeField({
+      count: 90,
+      home: (i, r) => [(r() - 0.5) * w * 1.15, (r() - 0.5) * h * 1.15, 0.1 + r() * 0.5],
+      color: (i, r) => pal.strokes[Math.floor(r() * pal.strokes.length)],
+      size: [0.5, 1.3], aspect: [2.4, 3.8], angle: (i, rnd) => rnd() * Math.PI * 2,
+      orbit: { radius: [0.15, 0.5], speed: [0.08, 0.22] },
+      opacity: 0,
+    }, rnd);
+    group.add(escape.points);
 
     const ember = createGlow(0xffb45e, 0.5, 0);
     ember.position.set(w / 2 - 0.12, -h / 2 + 0.12, 0.06);
     group.add(ember);
 
     scene.add(group);
-    frames.push({ slug, s2d, group, plane, halo, ember, pos, w, h, warmth: 0 });
+    frames.push({ slug, s2d, group, plane, halo, beam, escape, ember, pos, w, h, warmth: 0, pal });
   }
 
   function refreshEmbers() {
     for (const f of frames) {
-      f.ember.material.opacity = memory.hasReturned(f.slug) ? 0.65 : 0;
+      f.visited = memory.hasReturned(f.slug);
+      f.ember.material.opacity = f.visited ? 0.65 : 0;
     }
   }
   refreshEmbers();
@@ -360,16 +371,20 @@ export async function createHall(ctx, onSelect) {
     for (const f of frames) {
       const target = f === hovered ? 1 : 0;
       f.warmth += (target - f.warmth) * dt * 3;
-      f.halo.material.opacity = 0.10 + f.warmth * 0.3;
-      const s = 1 + f.warmth * 0.025;
+      // a visited painting keeps a soft living aura — it remembers the visitor
+      const visitAura = f.visited ? 0.12 : 0;
+      f.halo.material.opacity = 0.08 + f.warmth * 0.34 + visitAura;
+      f.beam.material.opacity = 0.14 + f.warmth * 0.22;
+      // brushstrokes always drift faintly; more escape when the gaze rests,
+      // and they surge as the visitor is pulled through the canvas
+      const surge = (mode === 'flying' && f.slug === flySlug) ? 0.85 : 0;
+      f.escape.setOpacity(Math.min(1, 0.12 + visitAura + f.warmth * 0.5 + surge));
+      f.escape.update(clock, 1);
+      const s = 1 + f.warmth * 0.03;
       f.group.scale.set(s, s, s);
     }
 
-    dust.update(clock, 1);
-    for (const c of cosmos) {
-      c.update(clock, 1);
-      if (c.galaxySpin) c.points.rotation.z = clock * c.galaxySpin;
-    }
+    for (const a of ambient) a.update(clock, 1);
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   }

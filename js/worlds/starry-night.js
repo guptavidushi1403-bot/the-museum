@@ -168,6 +168,29 @@ export default {
       opacity: 0.42,
     },
 
+    // ---- the moon: a glowing swirl-orb of gold in the corner of the sky ----
+    {
+      name: 'moon', origin: [...az(80, 20, 15)], count: 300,
+      home: spiral(1.5, 2.8, 0.5),
+      color: (i, r) => [1.0, 0.84 + r() * 0.12, 0.48 + r() * 0.22],
+      size: [0.6, 1.4], aspect: [2.0, 3.2], angle: spiralAngle,
+      orbit: { radius: [0.04, 0.12], speed: [0.05, 0.12] },
+      opacity: 0.5,
+    },
+    // its bright inner crescent
+    {
+      name: 'moonCore', origin: [...az(80, 20, 15.4)], count: 120,
+      home: (i, r) => {
+        const a = -0.6 + r() * 2.4;   // a C-shaped crescent
+        const rr = 1.6 + (r() - 0.5) * 0.5;
+        return [Math.cos(a) * rr, Math.sin(a) * rr, 0.2];
+      },
+      color: () => [1.0, 0.95, 0.7],
+      size: [0.7, 1.4], aspect: [1.6, 2.6], angle: 'flow',
+      orbit: { radius: [0.02, 0.06], speed: [0.03, 0.08] },
+      opacity: 0.7,
+    },
+
     // ---- the eleven stars as spiral swirls, each named so it can pulse ----
     ...STARS.map((p, i) => starField(p, i === 0 ? 2.4 : 1.2 + (i % 3) * 0.3, i % 2 === 0, `star${i}`)),
   ],
@@ -193,6 +216,13 @@ export default {
     if (a) a.rotation.z = clock * 0.22 * tempo;
     if (b) b.rotation.z = -clock * 0.26 * tempo;
     if (sky) sky.rotation.y = clock * 0.01 * tempo; // the whole sky slowly turns
+
+    // the moon glows and turns slowly in its corner
+    const moon = api.field('moon');
+    if (moon) {
+      moon.rotation.z = clock * 0.05 * tempo;
+      moon.scale.setScalar(1 + 0.06 * Math.sin(clock * 0.5 * tempo));
+    }
 
     // the cypress sways like a dark flame in the night wind
     const cy = api.field('cypress');

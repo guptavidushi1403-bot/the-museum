@@ -35,7 +35,9 @@ export async function runWorld(config, ctx, onClose) {
   scene.background = new THREE.Color(config.background);
   if (config.fog) scene.fog = new THREE.Fog(...config.fog);
 
-  const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 220);
+  // Portrait phones see a wider slice of the world so it still surrounds them.
+  const baseFov = innerWidth < innerHeight ? 72 : 58;
+  const camera = new THREE.PerspectiveCamera(baseFov, innerWidth / innerHeight, 0.1, 220);
 
   const fields = config.strokes.map((spec) => {
     const field = createStrokeField(spec, rnd);
@@ -69,7 +71,16 @@ export async function runWorld(config, ctx, onClose) {
   }, T(1200))];
 
   /* ----- overlays (shared DOM, reused across worlds) ----- */
-  const { reveal, revealText, revealAttr, whole, frame, label, veil } = overlays;
+  const { reveal, revealText, revealAttr, whole, frame, label, veil, plaque, passage } = overlays;
+
+  // The museum plaque: an always-available, in-world way home. Clicking it
+  // withdraws through the Return ritual — never a hard exit.
+  function onPlaque(e) {
+    e.stopPropagation();
+    arc.withdraw();
+  }
+  plaque?.addEventListener('click', onPlaque);
+  const plaqueTimer = setTimeout(() => plaque?.classList.add('on'), T(2600));
   const revealQueue = [];
   let revealBusy = false;
   function showReveal(r) {
@@ -113,6 +124,7 @@ export async function runWorld(config, ctx, onClose) {
   const raycaster = new THREE.Raycaster();
   function onClick(e) {
     if (returning) return;
+    if (e.target.closest?.('.plaque')) return;   // museum UI, not the world
     raycaster.setFromCamera(new THREE.Vector2(
       (e.clientX / innerWidth) * 2 - 1,
       -(e.clientY / innerHeight) * 2 + 1), camera);
@@ -147,6 +159,7 @@ export async function runWorld(config, ctx, onClose) {
   addEventListener('keydown', onKey);
   function onResize() {
     camera.aspect = innerWidth / innerHeight;
+    camera.fov = innerWidth < innerHeight ? 72 : 58;
     camera.updateProjectionMatrix();
   }
   addEventListener('resize', onResize);
@@ -189,6 +202,7 @@ export async function runWorld(config, ctx, onClose) {
   function beginReturn() {
     if (returning) return;
     returning = true;
+    plaque?.classList.remove('on');
     reveal.classList.remove('on');
     revealQueue.length = 0;
     airs?.stop?.(T(6000) / 1000);
@@ -243,6 +257,9 @@ export async function runWorld(config, ctx, onClose) {
   function teardown() {
     running = false;
     if (wholeRaf) cancelAnimationFrame(wholeRaf);
+    clearTimeout(plaqueTimer);
+    plaque?.classList.remove('on');
+    plaque?.removeEventListener('click', onPlaque);
     for (const t of timers) clearTimeout(t);
     removeEventListener('pointermove', onMove);
     removeEventListener('click', onClick);
@@ -322,7 +339,10 @@ export async function runWorld(config, ctx, onClose) {
 
   veil.classList.add('dark');
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => veil.classList.remove('dark'));
+    requestAnimationFrame(() => {
+      veil.classList.remove('dark');
+      passage?.classList.remove('on');   // the room has changed; the cue rests
+    });
   });
   requestAnimationFrame(animate);
 

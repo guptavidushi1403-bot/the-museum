@@ -123,7 +123,8 @@ const FRAGMENT = /* glsl */ `
  * }
  */
 export function createStrokeField(spec, rnd) {
-  const count = spec.count;
+  // Global paint density: phones thin the stroke count for smoothness.
+  const count = Math.max(8, Math.round(spec.count * (window.__paintDensity ?? 1)));
   const home = new Float32Array(count * 3);
   const tint = new Float32Array(count * 3);
   const dabSize = new Float32Array(count);

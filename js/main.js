@@ -16,10 +16,26 @@ const WORLDS = {
   'great-wave': () => import('./worlds/great-wave.js'),
 };
 
+// A remembered echo of the artist, shown while the world materializes —
+// so the passage feels intentional, never a blank load. All verified in
+// docs/research/; environmental sense-lines for artists who left no words.
+const PASSAGE = {
+  'starry-night': '“I go outside at night to paint the stars.” — Vincent van Gogh',
+  'water-lilies': '“A refuge of peaceful meditation.” — Claude Monet',
+  'two-fridas': '“…an imaginary friendship with a little girl…” — Frida Kahlo, her diary',
+  'pearl-earring': 'Johannes Vermeer — a room made entirely of light',
+  'great-wave': 'Katsushika Hokusai — under the wave off Kanagawa',
+};
+
 async function boot() {
+  // Phones get thinner paint and a lower pixel ratio: same museum,
+  // smooth on touch devices.
+  const mobile = Math.min(innerWidth, innerHeight) < 700 || navigator.maxTouchPoints > 1;
+  window.__paintDensity = mobile ? 0.55 : 1;
+
   const canvas = document.getElementById('gl');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
   renderer.setSize(innerWidth, innerHeight);
 
   const sound = createSound();
@@ -35,6 +51,8 @@ async function boot() {
     label: document.getElementById('label'),
     whisper: document.getElementById('whisper'),
     veil: document.getElementById('veil'),
+    plaque: document.getElementById('plaque'),
+    passage: document.getElementById('passage'),
   };
 
   const ctx = { renderer, sound, memory, overlays };
@@ -44,6 +62,8 @@ async function boot() {
   const hall = await createHall(ctx, async (slug) => {
     mode = 'world';
     activeSlug = slug;
+    overlays.passage.textContent = PASSAGE[slug] || 'entering the painting…';
+    overlays.passage.classList.add('on');   // a cinematic, intentional passage
     const config = (await WORLDS[slug]()).default;
     await runWorld(config, ctx, () => {
       mode = 'hall';
