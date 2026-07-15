@@ -103,8 +103,16 @@ export async function runWorld(config, ctx, onClose) {
   }
 
   /* ----- the drifting camera ----- */
+  // Surround worlds (sky, pond, room) orbit freely. Directional
+  // compositions (the Great Wave) set camera.sway + faceAngle so the
+  // visitor always faces the painting, swaying gently rather than circling
+  // behind it — the scene stays recognizable, the way the canvas is.
+  const faced = config.camera.faceAngle != null;
   const cam = {
-    angle: rnd() * Math.PI * 2,
+    angle: faced ? config.camera.faceAngle : rnd() * Math.PI * 2,
+    faceAngle: config.camera.faceAngle ?? 0,
+    front: config.camera.faceAngle ?? 0,
+    swayPhase: 0,
     radius: config.camera.radius * 1.8,   // start further out, then dolly in
     height: config.camera.height,
     targetRadius: config.camera.radius,   // ...through the surface of the canvas
@@ -147,7 +155,16 @@ export async function runWorld(config, ctx, onClose) {
   function glideTo(id) {
     const n = nodes.find((x) => x.id === id);
     if (!n) return;
-    cam.targetAngle = Math.atan2(n.vec.z, n.vec.x);
+    if (config.camera.sway != null) {
+      // stay facing the painting: shift the facing toward the node, clamped
+      let want = Math.atan2(n.vec.z, n.vec.x);
+      let d = want - cam.front;
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      cam.faceAngle = cam.front + Math.max(-0.7, Math.min(0.7, d));
+    } else {
+      cam.targetAngle = Math.atan2(n.vec.z, n.vec.x);
+    }
     cam.targetRadius = Math.max(2.2, n.vec.length() * 0.55);
     cam.targetHeight = n.vec.y * 0.7 + config.camera.height * 0.3;
     look.copy(n.vec);
@@ -288,13 +305,20 @@ export async function runWorld(config, ctx, onClose) {
     worldClock += dt;
 
     // Drift: the orbit never stops, even in Reflection (slowed, not still).
-    cam.angle += cam.speed * dt * Math.max(tempo, 0.12);
-    if (cam.targetAngle !== null) {
-      let d = cam.targetAngle - cam.angle;
-      while (d > Math.PI) d -= Math.PI * 2;
-      while (d < -Math.PI) d += Math.PI * 2;
-      cam.angle += d * (1 - Math.exp(-dt * 1.6));
-      if (Math.abs(d) < 0.05) cam.targetAngle = null;
+    if (config.camera.sway != null) {
+      // face the painting, swaying gently to either side — never behind it
+      cam.swayPhase += cam.speed * dt * Math.max(tempo, 0.12);
+      const target = cam.faceAngle + Math.sin(cam.swayPhase) * config.camera.sway;
+      cam.angle += (target - cam.angle) * (1 - Math.exp(-dt * 3));
+    } else {
+      cam.angle += cam.speed * dt * Math.max(tempo, 0.12);
+      if (cam.targetAngle !== null) {
+        let d = cam.targetAngle - cam.angle;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        cam.angle += d * (1 - Math.exp(-dt * 1.6));
+        if (Math.abs(d) < 0.05) cam.targetAngle = null;
+      }
     }
     cam.radius += (cam.targetRadius - cam.radius) * (1 - Math.exp(-dt * 0.9));
     cam.height += (cam.targetHeight - cam.height) * (1 - Math.exp(-dt * 0.9));
@@ -356,7 +380,9 @@ export async function runWorld(config, ctx, onClose) {
     place(id) { // test hook: jump the drift target straight to a node
       const n = nodes.find((x) => x.id === id);
       if (n) {
-        cam.angle = Math.atan2(n.vec.z, n.vec.x);
+        const a = Math.atan2(n.vec.z, n.vec.x);
+        cam.angle = a;
+        cam.faceAngle = a; cam.front = a; cam.swayPhase = 0;
         cam.radius = Math.max(2.0, n.vec.length() * 0.5);
         cam.targetRadius = cam.radius;
         cam.height = n.vec.y;
